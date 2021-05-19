@@ -9,10 +9,12 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.os.Build;
 import android.os.IBinder;
+import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -93,6 +95,7 @@ public class LockService extends IntentService {
     private void checkData() {
         while (threadIsTerminate) {
             //获取栈顶app的包名
+           // String packageName = getLockName();
            String packageName = getLauncherTopApp(LockService.this, activityManager);
             //String packageName = queryUsageStats(LockService.this);
             //判断包名打开解锁页面
@@ -279,11 +282,35 @@ public class LockService extends IntentService {
         Log.e("==============size",currentTopPackage+"");
             return currentTopPackage;
     }
+    private String getLockName()   {
+        // TODO Auto-generated method stub
+        List<PackageInfo> packages = getPackageManager()
+                .getInstalledPackages(0);
+        ActivityManager mActivityManager;
+        mActivityManager = (ActivityManager) this.getSystemService(Context.ACTIVITY_SERVICE);
 
+        String packageName ="";
+        if (Build.VERSION.SDK_INT > 20) {
+            UsageStatsManager usageStatsManager = (UsageStatsManager) getApplicationContext()
+                    .getSystemService(Context.USAGE_STATS_SERVICE);
 
-    /**
-     * 获得属于桌面的应用的应用包名称
-     */
+            long ts = System.currentTimeMillis();
+            List<UsageStats> queryUsageStats = usageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_BEST, 0, ts);
+
+            UsageStats recentStats = null;
+            for (UsageStats usageStats : queryUsageStats) {
+                if (recentStats == null || recentStats.getLastTimeUsed() < usageStats.getLastTimeUsed()) {
+                    recentStats = usageStats;
+                }
+            }
+            packageName = recentStats != null ? recentStats.getPackageName() : "";
+        }
+        Log.e("packageName","packageName---"+packageName);
+        return packageName;
+    }
+        /**
+         * 获得属于桌面的应用的应用包名称
+         */
     private List<String> getHomes() {
         List<String> names = new ArrayList<>();
         PackageManager packageManager = this.getPackageManager();
@@ -314,5 +341,61 @@ public class LockService extends IntentService {
         super.onDestroy();
         threadIsTerminate = false;
         unregisterReceiver(mServiceReceiver);
+    }
+
+    private static final long END_TIME = System.currentTimeMillis();
+    private static final long TIME_INTERVAL =  10000L;
+    private static final long START_TIME = END_TIME - TIME_INTERVAL;
+
+    /**
+     * 获取栈顶的应用包名
+     */
+    public static String getForegroundActivityName(Context context) {
+        String currentClassName = "";
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            ActivityManager manager = (ActivityManager) context.getApplicationContext().getSystemService(Context.ACTIVITY_SERVICE);
+            currentClassName = manager.getRunningTasks(1).get(0).topActivity.getPackageName();
+        } else {
+            UsageStats initStat = getForegroundUsageStats(context, START_TIME, END_TIME);
+            if (initStat != null) {
+                currentClassName = initStat.getPackageName();
+            }
+        }
+        Log.e("currentClassName","currentClassName-----------"+currentClassName);
+        return currentClassName;
+    }
+    /**
+     * 获取记录前台应用的UsageStats对象
+     */
+    private static UsageStats getForegroundUsageStats(Context context, long startTime, long endTime) {
+        UsageStats usageStatsResult = null;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            List<UsageStats> usageStatses = getUsageStatsList(context, startTime, endTime);
+            if (usageStatses == null || usageStatses.isEmpty()) return null;
+            for (UsageStats usageStats : usageStatses) {
+                if (usageStatsResult == null || usageStatsResult.getLastTimeUsed() < usageStats.getLastTimeUsed()) {
+                    usageStatsResult = usageStats;
+                }
+            }
+        }
+        return usageStatsResult;
+    }
+    /**
+     * 通过UsageStatsManager获取List<UsageStats>集合
+     */
+    public static List<UsageStats> getUsageStatsList(Context context, long startTime, long endTime) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            UsageStatsManager manager = (UsageStatsManager) context.getApplicationContext().getSystemService(Context.USAGE_STATS_SERVICE);
+            //UsageStatsManager.INTERVAL_WEEKLY，UsageStatsManager的参数定义了5个，具体查阅源码
+            List<UsageStats> usageStatses = manager.queryUsageStats(UsageStatsManager.INTERVAL_BEST, startTime, endTime);
+            if (usageStatses == null || usageStatses.size() == 0) {// 没有权限，获取不到数据
+                Intent intent = new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                context.getApplicationContext().startActivity(intent);
+                return null;
+            }
+            return usageStatses;
+        }
+        return null;
     }
 }
