@@ -1,0 +1,58 @@
+apply plugin: 'com.android.application'
+
+def releaseTime() {
+    return new Date().format("yyMMdd", TimeZone.getTimeZone("UTC"))
+}
+
+android {
+    compileSdkVersion 29
+    buildToolsVersion "29.0.0"
+    defaultConfig {
+        applicationId "com.mrlove.lock"
+        minSdkVersion 29
+        targetSdkVersion 29
+        versionCode 2
+        versionName "1.1"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+    buildTypes {
+        release {
+            zipAlignEnabled true //Zipalign优化
+            shrinkResources false //移除无用的resource文件
+            minifyEnabled false  //混淆
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    applicationVariants.all { variant ->
+        variant.outputs.all {
+            outputFileName = "${variant.name}-${variant.versionName}.apk"
+        }
+    }
+
+    //忽略一些错误
+    lintOptions {
+        abortOnError true
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+
+    //noinspection GradleCompatible
+    implementation 'androidx.appcompat:appcompat:1.0.0'
+    //noinspection GradleCompatible
+    implementation 'com.google.android.material:material:1.0.0'
+    //数据库
+    implementation 'org.litepal.android:core:1.4.1'
+
+    implementation "junit:junit:4.12"
+    implementation "androidx.test:runner:1.1.0"
+    implementation "androidx.test.espresso:espresso-core:3.1.0"
+    implementation "androidx.constraintlayout:constraintlayout:1.1.3"
+    implementation 'com.fanjun:keeplive:1.1.22'
+}

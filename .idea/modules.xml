@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/1-AppLock.iml" filepath="$PROJECT_DIR$/.idea/modules/1-AppLock.iml" group="AppLock" />
+      <module fileurl="file://$PROJECT_DIR$/AppLock.iml" filepath="$PROJECT_DIR$/AppLock.iml" group="AppLock" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/AppLock-app.iml" filepath="$PROJECT_DIR$/.idea/modules/app/AppLock-app.iml" group="AppLock/app" />
+      <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" group="AppLock/app" />
+    </modules>
+  </component>
+</project>
